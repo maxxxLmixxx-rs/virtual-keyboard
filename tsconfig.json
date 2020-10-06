@@ -1,0 +1,12 @@
+{
+  "compilerOptions": {
+    "target": "es5",
+    "outFile": "./build/keyboard.js",
+    "watch": true,
+    "lib": [
+      "es2019",
+      "DOM"
+    ]
+  },
+  "include": ["./source/*"]
+}

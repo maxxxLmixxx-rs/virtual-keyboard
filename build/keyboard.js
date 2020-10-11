@@ -276,13 +276,14 @@ var KeyboardEventHandler = /** @class */ (function () {
             }
             else {
                 var key = _this.findKey(eventCode);
-                if (!_this.combinationHandler(eventCode, true)) {
+                if (!_this.combinationHandler(eventCode, false)) {
                     if (_this.currentLanguage === "EN")
                         _this.typeKey(key, "EN");
                     if (_this.currentLanguage === "RU")
                         _this.typeKey(key, "RU");
                 }
-                // this.resetModifiers(); this.keyCombination.clear();
+                _this.resetModifiers();
+                _this.keyCombination.clear();
             }
         };
         this.handleMouseDown = function (e) {
@@ -358,27 +359,35 @@ var KeyboardEventHandler = /** @class */ (function () {
             if (key.en.toUpperCase() === key.shiftEn) {
                 if (lang === "EN")
                     this.type(key.shiftEn);
-                if (lang === "RU")
-                    this.type(key.shiftRu);
+                if (lang === "RU" && key.ru)
+                    this.type(key.ru);
+                if (lang === "RU" && !key.ru)
+                    this.type(key.en);
             }
             else {
                 if (lang === "EN")
                     this.type(key.en);
-                if (lang === "RU")
+                if (lang === "RU" && key.ru)
                     this.type(key.ru);
+                if (lang === "RU" && !key.ru)
+                    this.type(key.en);
             }
         }
         else if (this.modifiers["ShiftLeft"] || this.modifiers["ShiftRight"]) {
             if (lang === "EN")
                 this.type(key.shiftEn);
-            if (lang === "RU")
-                this.type(key.shiftRu);
+            if (lang === "RU" && key.ru)
+                this.type(key.ru);
+            if (lang === "RU" && !key.ru)
+                this.type(key.en);
         }
         else {
             if (lang === "EN")
                 this.type(key.en);
-            if (lang === "RU")
+            if (lang === "RU" && key.ru)
                 this.type(key.ru);
+            if (lang === "RU" && !key.ru)
+                this.type(key.en);
         }
     };
     KeyboardEventHandler.prototype.combinationHandler = function (eventCode, isReset) {

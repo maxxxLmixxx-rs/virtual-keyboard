@@ -326,17 +326,21 @@ class KeyboardEventHandler implements KeyboardF {
     if (this.activatable["CapsLock"]) {
       if (key.en.toUpperCase() === key.shiftEn) {
         if (lang === "EN") this.type(key.shiftEn);
-        if (lang === "RU") this.type(key.shiftRu);
+        if (lang === "RU" &&  key.ru) this.type(key.ru);
+        if (lang === "RU" && !key.ru) this.type(key.en);
       } else {
         if (lang === "EN") this.type(key.en);
-        if (lang === "RU") this.type(key.ru);
+        if (lang === "RU" &&  key.ru) this.type(key.ru);
+        if (lang === "RU" && !key.ru) this.type(key.en);
       }
     } else if (this.modifiers["ShiftLeft"] || this.modifiers["ShiftRight"]) {
       if (lang === "EN") this.type(key.shiftEn);
-      if (lang === "RU") this.type(key.shiftRu);
+      if (lang === "RU" &&  key.ru) this.type(key.ru);
+      if (lang === "RU" && !key.ru) this.type(key.en);
     } else {
       if (lang === "EN") this.type(key.en);
-      if (lang === "RU") this.type(key.ru);
+      if (lang === "RU" &&  key.ru) this.type(key.ru);
+      if (lang === "RU" && !key.ru) this.type(key.en);
     }
   }
   
@@ -353,15 +357,13 @@ class KeyboardEventHandler implements KeyboardF {
       this.activatable[eventCode] = !this.activatable[eventCode];
     } else if (eventCode in this.specialBehavior) {
       this.specialBehavior[eventCode]();
-      this.resetModifiers(); 
-      this.keyCombination.clear();
+      this.resetModifiers(); this.keyCombination.clear();
     } else {
       const key = this.findKey(eventCode);
-      if(!this.combinationHandler(eventCode, true)) {
+      if(!this.combinationHandler(eventCode, false)) {
         if (this.currentLanguage === "EN") this.typeKey(key, "EN");
         if (this.currentLanguage === "RU") this.typeKey(key, "RU");
-      }
-      // this.resetModifiers(); this.keyCombination.clear();
+      } this.resetModifiers(); this.keyCombination.clear();
     }
   }
 

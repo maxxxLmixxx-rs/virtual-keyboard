@@ -1,14 +1,30 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Virtual Keyboard v-2.0</title>
-</head>
-<body>
-  <div class="container">
-    <textarea id="type-output" class="type-output"></textarea>
-    <div id="keys-root" class="keys-root"></div>
-  </div>
-</body>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="./build/main.css" />
+    <title>Virtual Keyboard v-2.0</title>
+  </head>
+  <body>
+    <div class="container">
+      <textarea id="type-output" class="type-output"></textarea>
+      <div id="keys-root" class="keys-root"></div>
+      
+      <div class="keys-panel">
+        <span id="key-layout-info" class="keys-layout">EN</span> <!-- keys-root--ru -->
+        <svg class="hide-keyboard" fill="white" viewBox="0 0 512 512">
+          <path d="M70 335a21 21 0 1030-30l-48-49 74-74c44-45 108-63 168-50a21 21 0 109-42c-75-16-153 7-208 62L6 241c-8 8-8 22 0 30l64 64zM506 241l-64-64a21 21 0 10-30 30l49 49-74 74c-45 45-109 63-169 50a21 21 0 10-9 42c75 16 153-7 208-62l89-89c8-8 8-22 0-30z"/>
+          <path d="M149 256a21 21 0 1043 0c0-35 29-64 64-64a21 21 0 100-43c-59 0-107 48-107 107zM320 256c0 35-29 64-64 64a21 21 0 100 43c59 0 107-48 107-107a21 21 0 10-43 0zM506 6c-9-8-22-8-30 0L6 476a21 21 0 0030 30L506 36c8-8 8-21 0-30z"/>
+        </svg>
+        <div class="keys-help">?
+          <div class="keys-help__inner">
+            <span>Change virtual layout: Ctrl + Shift</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+    <script src="./build/keyboard.js"></script>
+  </body>
 </html>

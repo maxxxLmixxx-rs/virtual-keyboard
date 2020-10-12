@@ -15,7 +15,7 @@ class Key {
     width = 1
   }) {
     if (!eventCode) 
-        throw new Error('Specify eventCode at "Key" class!')
+        throw new Error('Specify eventCode at "Key" class!');
     
     this.en = en;
     this.ru = ru === en ? '' : ru;
@@ -131,14 +131,17 @@ class KeyboardDrawer implements KeyboardF {
 
   animateKey(key: HTMLElement) {
     this.startKeyAnimation(key);
-    this.endKeyAnimation(key);
+    setTimeout(() => this.endKeyAnimation(key), 175); 
   } 
   startKeyAnimation(key: HTMLElement) {    
     key.classList.add('active');
+  }
+  endKeyWithNoAnimation(key: HTMLElement) {
+    setTimeout(() => key.classList.remove('active'), 175);
   } 
   endKeyAnimation(key: HTMLElement) {
     key.classList.add('animate');
-    setTimeout(() => key.classList.remove('active'), 100);
+    setTimeout(() => key.classList.remove('active'), 175);
     setTimeout(() => key.classList.remove('animate'), 700);
   }
 
@@ -146,13 +149,14 @@ class KeyboardDrawer implements KeyboardF {
    * RECURSION LEVEL: 1
    */
   private getParentTarget(currentNode: HTMLElement): [string, HTMLElement] {
-    let eventCode, target;
+    let eventCode: string, target: HTMLElement;
+    if (!currentNode) return [null, null];
     if (currentNode.dataset.eventCode) {
       target = currentNode;
       eventCode = currentNode.dataset.eventCode;
-    } else if (currentNode.parentNode.dataset.eventCode) {
-      target = currentNode.parentNode;
-      eventCode = currentNode.parentNode.dataset.eventCode;
+    } else if ((currentNode.parentNode as HTMLElement).dataset.eventCode) {
+      target = (currentNode.parentNode as HTMLElement);
+      eventCode = (currentNode.parentNode as HTMLElement).dataset.eventCode;
     }
     return [eventCode, target];
   }
@@ -165,10 +169,12 @@ class KeyboardDrawer implements KeyboardF {
     return toCompare.reduce((bool, subarray) => bool && subarray.includes(true), true);
   }
 
+  private prevMouseDown: HTMLElement;
+
   private startEvents() {
     const handleClickEvent = e => {
-      const [eventCode, target] = this.getParentTarget(e.target);
-      if (!eventCode) return;
+      let [eventCode, target] = this.getParentTarget(e.detail.target || e.target);
+      if (!eventCode) return; e.preventDefault();      
       if (eventCode in this.clickActiveCSS) {
         this.clickActiveCSS[eventCode] = !this.clickActiveCSS[eventCode];
         if (this.isClickActiveCombination()) {
@@ -180,22 +186,42 @@ class KeyboardDrawer implements KeyboardF {
         this.animateKey(target);
         this.removeClickActiveCSS();
       } this.swapSpecialActiveCSS(target);
-    }; 
-    document.addEventListener('click', handleClickEvent);
+      this.prevMouseDown = null;
+    }; document.addEventListener('click', handleClickEvent);
+
+    const handleMouseDown = e => {
+      const [eventCode, target] = this.getParentTarget(e.target);
+      if (!eventCode) return;
+      if (!target.classList.contains('active')) {
+        this.startKeyAnimation(target); this.prevMouseDown = target;
+      }
+    }; document.addEventListener('mousedown', handleMouseDown);
+
+    const handleMouseUp = e => {
+      const [eventCode, target] = this.getParentTarget(this.prevMouseDown);
+      if (!eventCode) return;
+      if (e.target === target) return;
+      if (target.contains(e.target)) return;
+      if (eventCode in this.clickActiveCSS) {
+        if (target.classList.contains('active')) this.endKeyWithNoAnimation(target);
+      } else {
+        const modifiedEvent = new CustomEvent('click', {
+          detail: { target }
+        }); handleClickEvent(modifiedEvent);
+      } this.prevMouseDown = null;
+    }; document.addEventListener('mouseup', handleMouseUp);
 
     const handleKeyDown = e => {
       let target: HTMLElement = document.querySelector(`[data-event-code="${e.code}"]`);
       if (target) this.startKeyAnimation(target);
-    }; 
-    document.addEventListener('keydown', handleKeyDown);
+    }; document.addEventListener('keydown', handleKeyDown);
 
     const handleKeyUp = e => {
       let target: HTMLElement = document.querySelector(`[data-event-code=${e.code}]`);
       if (this.specialActiveCSS[e.code]) this.swapSpecialActiveCSS(target);
       if (target) this.endKeyAnimation(target);
       this.removeClickActiveCSS();
-    }; 
-    document.addEventListener('keyup', handleKeyUp);
+    }; document.addEventListener('keyup', handleKeyUp);
 
     window.onblur = function() {
       let activeElements = document.querySelectorAll(`.active[data-event-code]`);
@@ -209,7 +235,7 @@ class KeyboardEventHandler implements KeyboardF {
   private flatKeys: Key[];
   private eventCodes: string[];
 
-  private output: HTMLTextAreaElement;
+  public output: HTMLTextAreaElement;
   private keysLayoutInfo: HTMLElement;
 
   private modifiers = {
@@ -326,8 +352,8 @@ class KeyboardEventHandler implements KeyboardF {
     if (this.activatable["CapsLock"]) {
       if (key.en.toUpperCase() === key.shiftEn) {
         if (lang === "EN") this.type(key.shiftEn);
-        if (lang === "RU" &&  key.ru) this.type(key.ru);
-        if (lang === "RU" && !key.ru) this.type(key.en);
+        if (lang === "RU" &&  key.ru) this.type(key.shiftRu);
+        if (lang === "RU" && !key.ru) this.type(key.shiftEn);
       } else {
         if (lang === "EN") this.type(key.en);
         if (lang === "RU" &&  key.ru) this.type(key.ru);
@@ -335,19 +361,29 @@ class KeyboardEventHandler implements KeyboardF {
       }
     } else if (this.modifiers["ShiftLeft"] || this.modifiers["ShiftRight"]) {
       if (lang === "EN") this.type(key.shiftEn);
-      if (lang === "RU" &&  key.ru) this.type(key.ru);
-      if (lang === "RU" && !key.ru) this.type(key.en);
+      if (lang === "RU" &&  key.ru) this.type(key.shiftRu);
+      if (lang === "RU" && !key.ru) this.type(key.shiftEn);
     } else {
       if (lang === "EN") this.type(key.en);
       if (lang === "RU" &&  key.ru) this.type(key.ru);
       if (lang === "RU" && !key.ru) this.type(key.en);
     }
   }
+
+  private getEventCode = e => {
+    switch (e.type) {
+      case "keypress": case "keyup": case "keydown":
+        return e.code;
+    case "click" : case "mouseup": case "mousedown":
+    default:
+      return e.target.dataset.eventCode ||
+      e.target.parentNode.dataset.eventCode;
+    }
+  }
   
   private handleClick = (e: Event) => {
-    const eventCode = e.target.dataset.eventCode ||
-      e.target.parentNode.dataset.eventCode;
-    if (!eventCode) return; 
+    const eventCode = this.getEventCode(e);
+    if (!eventCode) return; e.preventDefault();
     this.output.focus();
     if (eventCode in this.modifiers) {
       this.modifiers[eventCode] = !this.modifiers[eventCode];
@@ -371,6 +407,9 @@ class KeyboardEventHandler implements KeyboardF {
   private previousInterval: number;
 
   private handleMouseDown = e => {
+    const eventCode = this.getEventCode(e);
+    if (!eventCode) return; e.preventDefault();
+
     const DELAY = 500, INTERVAL = 50;
     this.previousTimeout = setTimeout(() => {
       this.previousInterval = setInterval(() => {
@@ -385,10 +424,16 @@ class KeyboardEventHandler implements KeyboardF {
   }
 
   private handleKeyDown = e => {
+    if (e.code === "Tab") return;
     this.output.focus();
-    if (e.code in this.modifiers) 
-      this.modifiers[e.code] = true;
-    this.combinationHandler(e.code, false);
+    if (e.code === "Enter") {
+      e.preventDefault();
+      this.handleClick(e);
+    } else {
+      if (e.code in this.modifiers) 
+        this.modifiers[e.code] = true;
+      this.combinationHandler(e.code, false);
+    }
   }
 
   private handleKeyUp = e => {
@@ -419,11 +464,11 @@ class KeyboardEventHandler implements KeyboardF {
         }
       }
     }
-
     return false;
   }
 
   private changeLayout = () => {
+    this.output.focus();
     this.currentLanguage = this.currentLanguage === "EN" ? "RU" : "EN";
     this.keysLayoutInfo.innerText = this.currentLanguage;
   }
@@ -431,7 +476,7 @@ class KeyboardEventHandler implements KeyboardF {
   startEvents(output: HTMLTextAreaElement, keysLayoutInfo: HTMLElement) {
     this.output = output; this.keysLayoutInfo = keysLayoutInfo;
     keysLayoutInfo.addEventListener('click', this.changeLayout);
-    
+
     document.addEventListener('click', this.handleClick);
     document.addEventListener('mouseup', this.handleMouseUp);
     document.addEventListener('mousedown', this.handleMouseDown);
@@ -457,6 +502,8 @@ class Keyboard implements KeyboardF {
     this.drawer.drawKeyboard(keysRoot);
     this.handler = new KeyboardEventHandler(keys);
     this.handler.startEvents(typeOutput, keysLayoutInfo);
+    
+    this.keysRoot.addEventListener('click', e => typeOutput.focus());
   }
 
   hideKeyboard() {

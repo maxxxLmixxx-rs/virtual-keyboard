@@ -109,15 +109,19 @@ var KeyboardDrawer = /** @class */ (function () {
         }
     };
     KeyboardDrawer.prototype.animateKey = function (key) {
+        var _this = this;
         this.startKeyAnimation(key);
-        this.endKeyAnimation(key);
+        setTimeout(function () { return _this.endKeyAnimation(key); }, 175);
     };
     KeyboardDrawer.prototype.startKeyAnimation = function (key) {
         key.classList.add('active');
     };
+    KeyboardDrawer.prototype.endKeyWithNoAnimation = function (key) {
+        setTimeout(function () { return key.classList.remove('active'); }, 175);
+    };
     KeyboardDrawer.prototype.endKeyAnimation = function (key) {
         key.classList.add('animate');
-        setTimeout(function () { return key.classList.remove('active'); }, 100);
+        setTimeout(function () { return key.classList.remove('active'); }, 175);
         setTimeout(function () { return key.classList.remove('animate'); }, 700);
     };
     /**
@@ -125,6 +129,8 @@ var KeyboardDrawer = /** @class */ (function () {
      */
     KeyboardDrawer.prototype.getParentTarget = function (currentNode) {
         var eventCode, target;
+        if (!currentNode)
+            return [null, null];
         if (currentNode.dataset.eventCode) {
             target = currentNode;
             eventCode = currentNode.dataset.eventCode;
@@ -145,9 +151,10 @@ var KeyboardDrawer = /** @class */ (function () {
     KeyboardDrawer.prototype.startEvents = function () {
         var _this = this;
         var handleClickEvent = function (e) {
-            var _a = _this.getParentTarget(e.target), eventCode = _a[0], target = _a[1];
+            var _a = _this.getParentTarget(e.detail.target || e.target), eventCode = _a[0], target = _a[1];
             if (!eventCode)
                 return;
+            e.preventDefault();
             if (eventCode in _this.clickActiveCSS) {
                 _this.clickActiveCSS[eventCode] = !_this.clickActiveCSS[eventCode];
                 if (_this.isClickActiveCombination()) {
@@ -164,8 +171,40 @@ var KeyboardDrawer = /** @class */ (function () {
                 _this.removeClickActiveCSS();
             }
             _this.swapSpecialActiveCSS(target);
+            _this.prevMouseDown = null;
         };
         document.addEventListener('click', handleClickEvent);
+        var handleMouseDown = function (e) {
+            var _a = _this.getParentTarget(e.target), eventCode = _a[0], target = _a[1];
+            if (!eventCode)
+                return;
+            if (!target.classList.contains('active')) {
+                _this.startKeyAnimation(target);
+                _this.prevMouseDown = target;
+            }
+        };
+        document.addEventListener('mousedown', handleMouseDown);
+        var handleMouseUp = function (e) {
+            var _a = _this.getParentTarget(_this.prevMouseDown), eventCode = _a[0], target = _a[1];
+            if (!eventCode)
+                return;
+            if (e.target === target)
+                return;
+            if (target.contains(e.target))
+                return;
+            if (eventCode in _this.clickActiveCSS) {
+                if (target.classList.contains('active'))
+                    _this.endKeyWithNoAnimation(target);
+            }
+            else {
+                var modifiedEvent = new CustomEvent('click', {
+                    detail: { target: target }
+                });
+                handleClickEvent(modifiedEvent);
+            }
+            _this.prevMouseDown = null;
+        };
+        document.addEventListener('mouseup', handleMouseUp);
         var handleKeyDown = function (e) {
             var target = document.querySelector("[data-event-code=\"" + e.code + "\"]");
             if (target)
@@ -255,11 +294,25 @@ var KeyboardEventHandler = /** @class */ (function () {
         };
         this.currentLanguage = "EN";
         this.keyCombination = new Set();
+        this.getEventCode = function (e) {
+            switch (e.type) {
+                case "keypress":
+                case "keyup":
+                case "keydown":
+                    return e.code;
+                case "click":
+                case "mouseup":
+                case "mousedown":
+                default:
+                    return e.target.dataset.eventCode ||
+                        e.target.parentNode.dataset.eventCode;
+            }
+        };
         this.handleClick = function (e) {
-            var eventCode = e.target.dataset.eventCode ||
-                e.target.parentNode.dataset.eventCode;
+            var eventCode = _this.getEventCode(e);
             if (!eventCode)
                 return;
+            e.preventDefault();
             _this.output.focus();
             if (eventCode in _this.modifiers) {
                 _this.modifiers[eventCode] = !_this.modifiers[eventCode];
@@ -287,6 +340,10 @@ var KeyboardEventHandler = /** @class */ (function () {
             }
         };
         this.handleMouseDown = function (e) {
+            var eventCode = _this.getEventCode(e);
+            if (!eventCode)
+                return;
+            e.preventDefault();
             var DELAY = 500, INTERVAL = 50;
             _this.previousTimeout = setTimeout(function () {
                 _this.previousInterval = setInterval(function () {
@@ -299,10 +356,18 @@ var KeyboardEventHandler = /** @class */ (function () {
             clearTimeout(_this.previousTimeout);
         };
         this.handleKeyDown = function (e) {
+            if (e.code === "Tab")
+                return;
             _this.output.focus();
-            if (e.code in _this.modifiers)
-                _this.modifiers[e.code] = true;
-            _this.combinationHandler(e.code, false);
+            if (e.code === "Enter") {
+                e.preventDefault();
+                _this.handleClick(e);
+            }
+            else {
+                if (e.code in _this.modifiers)
+                    _this.modifiers[e.code] = true;
+                _this.combinationHandler(e.code, false);
+            }
         };
         this.handleKeyUp = function (e) {
             if (e.code in _this.activatable)
@@ -312,6 +377,7 @@ var KeyboardEventHandler = /** @class */ (function () {
             _this.keyCombination.delete(e.code);
         };
         this.changeLayout = function () {
+            _this.output.focus();
             _this.currentLanguage = _this.currentLanguage === "EN" ? "RU" : "EN";
             _this.keysLayoutInfo.innerText = _this.currentLanguage;
         };
@@ -360,9 +426,9 @@ var KeyboardEventHandler = /** @class */ (function () {
                 if (lang === "EN")
                     this.type(key.shiftEn);
                 if (lang === "RU" && key.ru)
-                    this.type(key.ru);
+                    this.type(key.shiftRu);
                 if (lang === "RU" && !key.ru)
-                    this.type(key.en);
+                    this.type(key.shiftEn);
             }
             else {
                 if (lang === "EN")
@@ -377,9 +443,9 @@ var KeyboardEventHandler = /** @class */ (function () {
             if (lang === "EN")
                 this.type(key.shiftEn);
             if (lang === "RU" && key.ru)
-                this.type(key.ru);
+                this.type(key.shiftRu);
             if (lang === "RU" && !key.ru)
-                this.type(key.en);
+                this.type(key.shiftEn);
         }
         else {
             if (lang === "EN")
@@ -434,6 +500,7 @@ var Keyboard = /** @class */ (function () {
         this.drawer.drawKeyboard(keysRoot);
         this.handler = new KeyboardEventHandler(keys);
         this.handler.startEvents(typeOutput, keysLayoutInfo);
+        this.keysRoot.addEventListener('click', function (e) { return typeOutput.focus(); });
     }
     Keyboard.prototype.hideKeyboard = function () {
         if (this.keysRoot.classList.contains('hide')) {

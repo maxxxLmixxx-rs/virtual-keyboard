@@ -385,6 +385,7 @@ textarea {
   height: 100%;
   padding: 5vh;
   word-break: normal;
+  word-break: break-all;
   resize: none;
   font-family: Arial, Helvetica, sans-serif;
   line-height: 3.5vh;
@@ -413,8 +414,8 @@ textarea:focus {
 }
 
 .keys-root {
-  width: 100%;
-  height: 65%;
+  bottom: 12.5%;
+  position: fixed;
   animation: floatIn 0.5s ease-in-out;
   animation-fill-mode: forwards;
   transform: translateY(100%);
@@ -423,8 +424,6 @@ textarea:focus {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  bottom: 5rem;
-  position: fixed;
   transition: bottom 0.5s ease;
 }
 

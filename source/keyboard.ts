@@ -401,10 +401,30 @@ class KeyboardEventHandler implements KeyboardF {
         if (this.currentLanguage === "RU") this.typeKey(key, "RU");
       } this.resetModifiers(); this.keyCombination.clear();
     }
+    if (
+      e.type === 'mousedown' ||
+      e.type === 'click' 
+      && this.previousEventType === 'mousedown' 
+      && this.previousEventCode === eventCode 
+    ) this.mouseDownReset(eventCode);
+    this.previousEventType = e.type;
+    this.previousEventCode = eventCode;
   }
 
   private previousTimeout: number;
   private previousInterval: number;
+  private previousModifier: Boolean;
+  private previousActivatable: Boolean;
+  
+  private previousEventType: string;
+  private previousEventCode: string;
+
+  private mouseDownReset(eventCode: string): void {
+    if (eventCode in this.modifiers)
+      this.modifiers[eventCode] = this.previousModifier;
+    if (eventCode in this.activatable)
+      this.activatable[eventCode] = this.previousActivatable;
+  }
 
   private handleMouseDown = e => {
     const eventCode = this.getEventCode(e);
@@ -412,8 +432,10 @@ class KeyboardEventHandler implements KeyboardF {
 
     const DELAY = 500, INTERVAL = 50;
     this.previousTimeout = setTimeout(() => {
+      this.previousModifier = this.modifiers[eventCode];
+      this.previousActivatable = !this.activatable[eventCode];
       this.previousInterval = setInterval(() => {
-        this.handleClick(e);
+        this.handleClick(e); 
       }, INTERVAL)
     }, DELAY)
   }

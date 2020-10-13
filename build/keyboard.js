@@ -338,6 +338,13 @@ var KeyboardEventHandler = /** @class */ (function () {
                 _this.resetModifiers();
                 _this.keyCombination.clear();
             }
+            if (e.type === 'mousedown' ||
+                e.type === 'click'
+                    && _this.previousEventType === 'mousedown'
+                    && _this.previousEventCode === eventCode)
+                _this.mouseDownReset(eventCode);
+            _this.previousEventType = e.type;
+            _this.previousEventCode = eventCode;
         };
         this.handleMouseDown = function (e) {
             var eventCode = _this.getEventCode(e);
@@ -346,6 +353,8 @@ var KeyboardEventHandler = /** @class */ (function () {
             e.preventDefault();
             var DELAY = 500, INTERVAL = 50;
             _this.previousTimeout = setTimeout(function () {
+                _this.previousModifier = _this.modifiers[eventCode];
+                _this.previousActivatable = !_this.activatable[eventCode];
                 _this.previousInterval = setInterval(function () {
                     _this.handleClick(e);
                 }, INTERVAL);
@@ -455,6 +464,12 @@ var KeyboardEventHandler = /** @class */ (function () {
             if (lang === "RU" && !key.ru)
                 this.type(key.en);
         }
+    };
+    KeyboardEventHandler.prototype.mouseDownReset = function (eventCode) {
+        if (eventCode in this.modifiers)
+            this.modifiers[eventCode] = this.previousModifier;
+        if (eventCode in this.activatable)
+            this.activatable[eventCode] = this.previousActivatable;
     };
     KeyboardEventHandler.prototype.combinationHandler = function (eventCode, isReset) {
         var _this = this;
